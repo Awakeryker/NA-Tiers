@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="robots" content="noindex, nofollow, noarchive">
+
+    <title>NA Tiers</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="site-name">
+        NA <span>TIERS</span>
+    </div>
+
+    <div class="search-container">
+        <input
+            id="playerSearch"
+            type="text"
+            placeholder="Search username..."
+            autocomplete="off"
+        >
+        <div id="searchResults"></div>
+    </div>
+
+</header>
+
+
+<main>
+
+    <section class="hero">
+
+        <p class="subtitle">NORTH AMERICAN MINECRAFT PVP</p>
+
+        <h1>NA Tiers</h1>
+
+        <p>
+            North American Minecraft PvP rankings.
+        </p>
+
+    </section>
+
+
+    <!-- GAMEMODE NAVIGATION -->
+
+    <section class="tier-navigation">
+
+        <button class="mode active" data-mode="Overall">
+            🏆 Overall
+        </button>
+
+        <button class="mode" data-mode="Diamond SMP">
+            💎 Diamond SMP
+        </button>
+
+        <button class="mode" data-mode="Sword">
+            ⚔️ Sword
+        </button>
+
+        <button class="mode" data-mode="Axe">
+            🪓 Axe
+        </button>
+
+        <button class="mode" data-mode="Neth SMP">
+            🔥 Neth SMP
+        </button>
+
+        <button class="mode" data-mode="UHC">
+            🥊 UHC
+        </button>
+
+        <button class="mode" data-mode="Cart">
+            🛒 Cart
+        </button>
+
+        <button class="mode" data-mode="Spear & Mace">
+            🔱 Spear & Mace
+        </button>
+
+        <button class="mode" data-mode="Crystal">
+            💠 Crystal
+        </button>
+
+        <button class="mode edit-button" id="editButton">
+            🔒 Edit
+        </button>
+
+    </section>
+
+
+    <!-- CURRENT LIST -->
+
+    <section class="ranking-section">
+
+        <div class="ranking-header">
+
+            <div>
+                <p class="subtitle" id="currentCategory">
+                    OVERALL
+                </p>
+
+                <h2 id="rankingTitle">
+                    Overall Rankings
+                </h2>
+            </div>
+
+        </div>
+
+
+        <div id="rankingList" class="ranking-list"></div>
+
+    </section>
+
+</main>
+
+
+<!-- PLAYER PROFILE -->
+
+<div id="profileOverlay" class="overlay hidden">
+
+    <div class="profile">
+
+        <button id="closeProfile" class="close-button">
+            ×
+        </button>
+
+        <div class="profile-top">
+
+            <img
+                id="profileAvatar"
+                class="profile-avatar"
+                src=""
+                alt="Minecraft Avatar"
+            >
+
+            <div>
+                <h2 id="profileName"></h2>
+
+                <p id="profilePoints"></p>
+            </div>
+
+        </div>
+
+
+        <div id="profileTiers" class="profile-tiers"></div>
+
+    </div>
+
+</div>
+
+
+<!-- EDIT LOGIN -->
+
+<div id="loginOverlay" class="overlay hidden">
+
+    <div class="login-box">
+
+        <button id="closeLogin" class="close-button">
+            ×
+        </button>
+
+        <p class="subtitle">
+            TESTER ACCESS
+        </p>
+
+        <h2>Edit Tier List</h2>
+
+        <p>
+            Enter the tester password to continue.
+        </p>
+
+        <input
+            id="testerPassword"
+            type="password"
+            placeholder="Password"
+        >
+
+        <button id="loginButton" class="main-button">
+            Enter
+        </button>
+
+        <p id="loginMessage"></p>
+
+    </div>
+
+</div>
+
+
+<!-- EDIT PANEL -->
+
+<div id="editorOverlay" class="overlay hidden">
+
+    <div class="editor">
+
+        <button id="closeEditor" class="close-button">
+            ×
+        </button>
+
+        <div class="editor-header">
+
+            <div>
+                <p class="subtitle">
+                    TESTER PANEL
+                </p>
+
+                <h2>Edit Tier List</h2>
+            </div>
+
+        </div>
+
+
+        <label>
+            Minecraft Username
+
+            <input
+                id="editUsername"
+                type="text"
+                placeholder="Username"
+            >
+
+        </label>
+
+
+        <label>
+            Gamemode
+
+            <select id="editGamemode">
+
+                <option>Diamond SMP</option>
+                <option>Sword</option>
+                <option>Axe</option>
+                <option>Neth SMP</option>
+                <option>UHC</option>
+                <option>Cart</option>
+                <option>Spear & Mace</option>
+                <option>Crystal</option>
+
+            </select>
+
+        </label>
+
+
+        <label>
+            Tier
+
+            <select id="editTier">
+
+                <option value="UNTESTED">
+                    Untested
+                </option>
+
+                <option value="HT1">HT1</option>
+                <option value="LT1">LT1</option>
+
+                <option value="HT2">HT2</option>
+                <option value="LT2">LT2</option>
+
+                <option value="HT3">HT3</option>
+                <option value="LT3">LT3</option>
+
+                <option value="HT4">HT4</option>
+                <option value="LT4">LT4</option>
+
+                <option value="HT5">HT5</option>
+                <option value="LT5">LT5</option>
+
+            </select>
+
+        </label>
+
+
+        <button id="saveTier" class="main-button">
+            Save Tier
+        </button>
+
+        <p id="saveMessage"></p>
+
+        <p class="warning">
+            This is the prototype editor. For a real public website,
+            authentication and rankings should be stored securely on a server.
+        </p>
+
+    </div>
+
+</div>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
