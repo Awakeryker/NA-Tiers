@@ -1,4 +1,19 @@
 /* =========================================================
+   SUPABASE
+========================================================= */
+
+const SUPABASE_URL =
+    "https://gcoqlvjndhgqlukpgfqm.supabase.co";
+
+const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjb3FsdmpuZGhncWx1a3BnZnFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCJjZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+    );
+/* =========================================================
    NA TIERS
    Main Website Logic
 ========================================================= */
