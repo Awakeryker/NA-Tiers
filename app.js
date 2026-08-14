@@ -6,16 +6,17 @@ const SUPABASE_URL =
     "https://gcoqlvjndhgqlukpgfqm.supabase.co";
 
 const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjb3FsdmpuZGhncWx1a3BnZnFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCJjZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjb3FsdmpuZGhncWx1a3BnZnFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCjJZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
 
 const supabaseClient =
     window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_ANON_KEY
     );
+
+
 /* =========================================================
    NA TIERS
-   Main Website Logic
 ========================================================= */
 
 
@@ -62,6 +63,24 @@ const GAMEMODES = [
 
 
 /* =========================================================
+   DATABASE COLUMN NAMES
+========================================================= */
+
+const MODE_COLUMNS = {
+
+    "Diamond SMP": "diamond_smp",
+    "Sword": "sword",
+    "Axe": "axe",
+    "Neth SMP": "neth_smp",
+    "UHC": "uhc",
+    "Cart": "cart",
+    "Spear & Mace": "spear_mace",
+    "Crystal": "crystal"
+
+};
+
+
+/* =========================================================
    GAMEMODE ICONS
 ========================================================= */
 
@@ -98,62 +117,7 @@ const TESTER_PASSWORD =
    PLAYER DATABASE
 ========================================================= */
 
-let players = {
-
-    DreamExample: {
-
-        tiers: {
-
-            "Diamond SMP": "HT2",
-            "Sword": "HT1",
-            "Axe": "HT3",
-            "Neth SMP": "LT2",
-            "UHC": "HT3",
-            "Cart": null,
-            "Spear & Mace": "HT4",
-            "Crystal": "LT1"
-
-        }
-
-    },
-
-
-    SteveExample: {
-
-        tiers: {
-
-            "Diamond SMP": "HT3",
-            "Sword": "LT1",
-            "Axe": "HT2",
-            "Neth SMP": null,
-            "UHC": "HT4",
-            "Cart": "LT3",
-            "Spear & Mace": null,
-            "Crystal": "HT3"
-
-        }
-
-    },
-
-
-    AlexExample: {
-
-        tiers: {
-
-            "Diamond SMP": "LT2",
-            "Sword": "HT3",
-            "Axe": null,
-            "Neth SMP": "HT3",
-            "UHC": "LT2",
-            "Cart": null,
-            "Spear & Mace": "LT3",
-            "Crystal": null
-
-        }
-
-    }
-
-};
+let players = {};
 
 
 /* =========================================================
@@ -200,29 +164,120 @@ let currentMode =
 
 
 /* =========================================================
-   LOAD SAVED PLAYERS
+   CONVERT DATABASE ROW → WEBSITE PLAYER
 ========================================================= */
 
-const savedPlayers =
-    localStorage.getItem(
-        "naTiersPlayers"
+function databaseRowToPlayer(row) {
+
+    const tiers = {};
+
+    GAMEMODES.forEach(
+        mode => {
+
+            const column =
+                MODE_COLUMNS[mode];
+
+            tiers[mode] =
+                row[column] || null;
+
+        }
     );
 
+    return {
 
-if (savedPlayers) {
+        tiers: tiers
+
+    };
+
+}
+
+
+/* =========================================================
+   CONVERT WEBSITE PLAYER → DATABASE ROW
+========================================================= */
+
+function playerToDatabaseRow(
+    username,
+    player
+) {
+
+    const row = {
+
+        username: username
+
+    };
+
+    GAMEMODES.forEach(
+        mode => {
+
+            const column =
+                MODE_COLUMNS[mode];
+
+            row[column] =
+                player.tiers[mode] || null;
+
+        }
+    );
+
+    return row;
+
+}
+
+
+/* =========================================================
+   LOAD PLAYERS FROM SUPABASE
+========================================================= */
+
+async function loadPlayersFromDatabase() {
 
     try {
 
-        players =
-            JSON.parse(
-                savedPlayers
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("players")
+                .select("*");
+
+
+        if (error) {
+
+            console.error(
+                "Supabase load error:",
+                error
             );
+
+            return false;
+
+        }
+
+
+        players = {};
+
+
+        data.forEach(
+            row => {
+
+                players[row.username] =
+                    databaseRowToPlayer(
+                        row
+                    );
+
+            }
+        );
+
+
+        return true;
 
     } catch (error) {
 
-        console.log(
-            "Could not load saved player data."
+        console.error(
+            "Could not connect to Supabase:",
+            error
         );
+
+        return false;
 
     }
 
@@ -230,20 +285,244 @@ if (savedPlayers) {
 
 
 /* =========================================================
-   SAVE PLAYERS
+   SAVE / UPDATE ONE PLAYER
 ========================================================= */
 
-function savePlayers() {
+async function savePlayerToDatabase(
+    username
+) {
 
-    localStorage.setItem(
+    const player =
+        players[username];
 
-        "naTiersPlayers",
 
-        JSON.stringify(
-            players
-        )
+    if (!player) {
 
-    );
+        return false;
+
+    }
+
+
+    const row =
+        playerToDatabaseRow(
+            username,
+            player
+        );
+
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("players")
+                .upsert(
+                    row,
+                    {
+                        onConflict:
+                            "username"
+                    }
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Supabase save error:",
+                error
+            );
+
+            return false;
+
+        }
+
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Supabase save error:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   DELETE PLAYER FROM DATABASE
+========================================================= */
+
+async function deletePlayerFromDatabase(
+    username
+) {
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("players")
+                .delete()
+                .eq(
+                    "username",
+                    username
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Supabase delete error:",
+                error
+            );
+
+            return false;
+
+        }
+
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Supabase delete error:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   INITIAL SAMPLE DATA
+   Only used if Supabase is completely empty.
+========================================================= */
+
+function createDefaultPlayers() {
+
+    return {
+
+        DreamExample: {
+
+            tiers: {
+
+                "Diamond SMP": "HT2",
+                "Sword": "HT1",
+                "Axe": "HT3",
+                "Neth SMP": "LT2",
+                "UHC": "HT3",
+                "Cart": null,
+                "Spear & Mace": "HT4",
+                "Crystal": "LT1"
+
+            }
+
+        },
+
+
+        SteveExample: {
+
+            tiers: {
+
+                "Diamond SMP": "HT3",
+                "Sword": "LT1",
+                "Axe": "HT2",
+                "Neth SMP": null,
+                "UHC": "HT4",
+                "Cart": "LT3",
+                "Spear & Mace": null,
+                "Crystal": "HT3"
+
+            }
+
+        },
+
+
+        AlexExample: {
+
+            tiers: {
+
+                "Diamond SMP": "LT2",
+                "Sword": "HT3",
+                "Axe": null,
+                "Neth SMP": "HT3",
+                "UHC": "LT2",
+                "Cart": null,
+                "Spear & Mace": "LT3",
+                "Crystal": null
+
+            }
+
+        }
+
+    };
+
+}
+
+
+/* =========================================================
+   SEED DATABASE IF EMPTY
+========================================================= */
+
+async function seedDatabaseIfEmpty() {
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("players")
+            .select("username")
+            .limit(1);
+
+
+    if (error) {
+
+        console.error(
+            "Could not check database:",
+            error
+        );
+
+        return;
+
+    }
+
+
+    if (
+        data &&
+        data.length > 0
+    ) {
+
+        return;
+
+    }
+
+
+    players =
+        createDefaultPlayers();
+
+
+    for (
+        const username of
+        Object.keys(players)
+    ) {
+
+        await savePlayerToDatabase(
+            username
+        );
+
+    }
 
 }
 
@@ -297,7 +576,9 @@ function getPlayerPoints(player) {
    GET PLAYER TIERS
 ========================================================= */
 
-function getPlayerTierArray(player) {
+function getPlayerTierArray(
+    player
+) {
 
     const tiers = [];
 
@@ -315,7 +596,6 @@ function getPlayerTierArray(player) {
             tiers.push({
 
                 mode: mode,
-
                 tier: tier
 
             });
@@ -355,7 +635,9 @@ function tierClass(tier) {
    CREATE TIER BADGE
 ========================================================= */
 
-function createTierBadge(tier) {
+function createTierBadge(
+    tier
+) {
 
     if (!tier) {
 
@@ -548,6 +830,37 @@ function getRank(
 
 
 /* =========================================================
+   TOP 3 COLORS
+========================================================= */
+
+function getRankClass(
+    rank
+) {
+
+    if (rank === 1) {
+
+        return "rank-gold";
+
+    }
+
+    if (rank === 2) {
+
+        return "rank-silver";
+
+    }
+
+    if (rank === 3) {
+
+        return "rank-bronze";
+
+    }
+
+    return "";
+
+}
+
+
+/* =========================================================
    OVERALL DISPLAY
 ========================================================= */
 
@@ -620,18 +933,11 @@ function renderOverall() {
                 );
 
 
-            /*
-               THIS IS THE IMPORTANT PART.
+            const rankClass =
+                getRankClass(
+                    rank
+                );
 
-               Each tier now shows:
-
-               Gamemode + Tier
-
-               Example:
-
-               ⚔️ Sword HT1
-               💎 Diamond SMP HT2
-            */
 
             const tierHTML =
                 player.tiers
@@ -671,7 +977,9 @@ function renderOverall() {
 
                 <div class="ranking-row">
 
-                    <div class="position">
+                    <div
+                        class="position ${rankClass}"
+                    >
 
                         ${rank}
 
@@ -679,7 +987,7 @@ function renderOverall() {
 
 
                     <div
-                        class="player-name"
+                        class="player-name ${rankClass}"
                         onclick="openProfile('${escapeHTML(
                             player.username
                         )}')"
@@ -1004,11 +1312,13 @@ function openProfile(
                 <div class="profile-tier">
 
                     <span>
+
                         ${getModeIcon(
                             mode
                         )}
 
                         ${mode}
+
                     </span>
 
 
@@ -1400,7 +1710,7 @@ document
     );
 
 
-function saveTier() {
+async function saveTier() {
 
     const username =
         document
@@ -1449,9 +1759,7 @@ function saveTier() {
     }
 
 
-    /*
-       Create player if needed.
-    */
+    /* Create player if needed */
 
     if (
         !players[username]
@@ -1466,32 +1774,19 @@ function saveTier() {
     }
 
 
-    /*
-       Make sure all gamemodes exist.
-    */
+    /* Make sure all gamemodes exist */
 
     GAMEMODES.forEach(
         mode => {
 
             if (
-                !players[username]
-                    .tiers
-            ) {
-
-                players[username]
-                    .tiers = {};
-
-            }
-
-
-            if (
                 !(mode in
-                    players[username]
-                        .tiers)
+                    players[username].tiers)
             ) {
 
                 players[username]
-                    .tiers[mode] = null;
+                    .tiers[mode] =
+                    null;
 
             }
 
@@ -1499,9 +1794,7 @@ function saveTier() {
     );
 
 
-    /*
-       Untested removes the tier.
-    */
+    /* Set or remove tier */
 
     if (
         tier ===
@@ -1521,7 +1814,30 @@ function saveTier() {
     }
 
 
-    savePlayers();
+    message.textContent =
+        "Saving...";
+
+    message.style.color =
+        "#ffffff";
+
+
+    const success =
+        await savePlayerToDatabase(
+            username
+        );
+
+
+    if (!success) {
+
+        message.textContent =
+            "Could not save to database.";
+
+        message.style.color =
+            "#ff7777";
+
+        return;
+
+    }
 
 
     message.textContent =
@@ -1530,6 +1846,180 @@ function saveTier() {
         gamemode +
         " ranking was updated.";
 
+    message.style.color =
+        "#7ee2a8";
+
+
+    renderMode();
+
+}
+
+
+/* =========================================================
+   DELETE PLAYER
+========================================================= */
+
+function addDeleteButton() {
+
+    const saveButton =
+        document.getElementById(
+            "saveTier"
+        );
+
+
+    if (!saveButton) {
+
+        return;
+
+    }
+
+
+    if (
+        document.getElementById(
+            "deletePlayer"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const deleteButton =
+        document.createElement(
+            "button"
+        );
+
+
+    deleteButton.id =
+        "deletePlayer";
+
+    deleteButton.textContent =
+        "Delete Player";
+
+
+    deleteButton.style.marginTop =
+        "10px";
+
+    deleteButton.style.background =
+        "#7a2525";
+
+    deleteButton.style.color =
+        "white";
+
+    deleteButton.style.border =
+        "none";
+
+    deleteButton.style.padding =
+        "10px 16px";
+
+    deleteButton.style.cursor =
+        "pointer";
+
+
+    saveButton.parentElement.appendChild(
+        deleteButton
+    );
+
+
+    deleteButton.addEventListener(
+        "click",
+        deletePlayer
+    );
+
+}
+
+
+async function deletePlayer() {
+
+    const username =
+        document
+            .getElementById(
+                "editUsername"
+            )
+            .value
+            .trim();
+
+
+    const message =
+        document
+            .getElementById(
+                "saveMessage"
+            );
+
+
+    if (!username) {
+
+        message.textContent =
+            "Enter the username of the player to delete.";
+
+        message.style.color =
+            "#ff7777";
+
+        return;
+
+    }
+
+
+    if (
+        !players[username]
+    ) {
+
+        message.textContent =
+            "That player does not exist.";
+
+        message.style.color =
+            "#ff7777";
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete " +
+            username +
+            " from NA Tiers?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    message.textContent =
+        "Deleting...";
+
+
+    const success =
+        await deletePlayerFromDatabase(
+            username
+        );
+
+
+    if (!success) {
+
+        message.textContent =
+            "Could not delete player.";
+
+        message.style.color =
+            "#ff7777";
+
+        return;
+
+    }
+
+
+    delete players[username];
+
+
+    message.textContent =
+        username +
+        " was deleted.";
 
     message.style.color =
         "#7ee2a8";
@@ -1564,7 +2054,96 @@ function escapeHTML(
 
 
 /* =========================================================
+   REALTIME DATABASE UPDATES
+========================================================= */
+
+function startRealtimeUpdates() {
+
+    supabaseClient
+        .channel(
+            "na-tiers-live"
+        )
+        .on(
+            "postgres_changes",
+            {
+                event: "*",
+                schema: "public",
+                table: "players"
+            },
+            async () => {
+
+                console.log(
+                    "NA Tiers database changed. Reloading..."
+                );
+
+
+                await loadPlayersFromDatabase();
+
+
+                renderMode();
+
+            }
+        )
+        .subscribe(
+            status => {
+
+                console.log(
+                    "Realtime status:",
+                    status
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
    INITIALIZE
 ========================================================= */
 
-renderMode();
+async function initializeNA Tiers() {
+
+    const loaded =
+        await loadPlayersFromDatabase();
+
+
+    if (!loaded) {
+
+        console.error(
+            "NA Tiers could not connect to Supabase."
+        );
+
+        return;
+
+    }
+
+
+    /*
+       If database is empty, put the
+       original example players into it.
+    */
+
+    if (
+        Object.keys(players).length === 0
+    ) {
+
+        await seedDatabaseIfEmpty();
+
+        await loadPlayersFromDatabase();
+
+    }
+
+
+    renderMode();
+
+
+    addDeleteButton();
+
+
+    startRealtimeUpdates();
+
+}
+
+
+initializeNATiers();
