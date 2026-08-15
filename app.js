@@ -1,4 +1,10 @@
 /* =========================================================
+   NA TIERS
+   Supabase-powered website logic
+========================================================= */
+
+
+/* =========================================================
    SUPABASE
 ========================================================= */
 
@@ -6,18 +12,13 @@ const SUPABASE_URL =
     "https://gcoqlvjndhgqlukpgfqm.supabase.co";
 
 const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjb3FsdmpuZGhncWx1a3BnZnFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCjJZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXAiLCJpYXQiOjE3ODY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCjJZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
 
 const supabaseClient =
     window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_ANON_KEY
     );
-
-
-/* =========================================================
-   NA TIERS
-========================================================= */
 
 
 /* =========================================================
@@ -114,10 +115,17 @@ const TESTER_PASSWORD =
 
 
 /* =========================================================
-   PLAYER DATABASE
+   PLAYER DATA
 ========================================================= */
 
 let players = {};
+
+
+/* =========================================================
+   CURRENT MODE
+========================================================= */
+
+let currentMode = "Overall";
 
 
 /* =========================================================
@@ -125,75 +133,51 @@ let players = {};
 ========================================================= */
 
 const rankingList =
-    document.getElementById(
-        "rankingList"
-    );
+    document.getElementById("rankingList");
 
 const rankingTitle =
-    document.getElementById(
-        "rankingTitle"
-    );
+    document.getElementById("rankingTitle");
 
 const currentCategory =
-    document.getElementById(
-        "currentCategory"
-    );
+    document.getElementById("currentCategory");
 
 const modeButtons =
-    document.querySelectorAll(
-        ".mode"
-    );
+    document.querySelectorAll(".mode");
 
 const playerSearch =
-    document.getElementById(
-        "playerSearch"
-    );
+    document.getElementById("playerSearch");
 
 const searchResults =
-    document.getElementById(
-        "searchResults"
-    );
+    document.getElementById("searchResults");
 
 
 /* =========================================================
-   CURRENT GAMEMODE
-========================================================= */
-
-let currentMode =
-    "Overall";
-
-
-/* =========================================================
-   CONVERT DATABASE ROW → WEBSITE PLAYER
+   DATABASE ROW → PLAYER
 ========================================================= */
 
 function databaseRowToPlayer(row) {
 
     const tiers = {};
 
-    GAMEMODES.forEach(
-        mode => {
+    GAMEMODES.forEach(mode => {
 
-            const column =
-                MODE_COLUMNS[mode];
+        const column =
+            MODE_COLUMNS[mode];
 
-            tiers[mode] =
-                row[column] || null;
+        tiers[mode] =
+            row[column] || null;
 
-        }
-    );
+    });
 
     return {
-
         tiers: tiers
-
     };
 
 }
 
 
 /* =========================================================
-   CONVERT WEBSITE PLAYER → DATABASE ROW
+   PLAYER → DATABASE ROW
 ========================================================= */
 
 function playerToDatabaseRow(
@@ -202,22 +186,18 @@ function playerToDatabaseRow(
 ) {
 
     const row = {
-
         username: username
-
     };
 
-    GAMEMODES.forEach(
-        mode => {
+    GAMEMODES.forEach(mode => {
 
-            const column =
-                MODE_COLUMNS[mode];
+        const column =
+            MODE_COLUMNS[mode];
 
-            row[column] =
-                player.tiers[mode] || null;
+        row[column] =
+            player.tiers[mode] || null;
 
-        }
-    );
+    });
 
     return row;
 
@@ -225,7 +205,7 @@ function playerToDatabaseRow(
 
 
 /* =========================================================
-   LOAD PLAYERS FROM SUPABASE
+   LOAD PLAYERS
 ========================================================= */
 
 async function loadPlayersFromDatabase() {
@@ -240,7 +220,6 @@ async function loadPlayersFromDatabase() {
                 .from("players")
                 .select("*");
 
-
         if (error) {
 
             console.error(
@@ -252,21 +231,18 @@ async function loadPlayersFromDatabase() {
 
         }
 
-
         players = {};
 
+        data.forEach(row => {
 
-        data.forEach(
-            row => {
-
-                players[row.username] =
-                    databaseRowToPlayer(
-                        row
-                    );
-
+            if (!row.username) {
+                return;
             }
-        );
 
+            players[row.username] =
+                databaseRowToPlayer(row);
+
+        });
 
         return true;
 
@@ -285,7 +261,7 @@ async function loadPlayersFromDatabase() {
 
 
 /* =========================================================
-   SAVE / UPDATE ONE PLAYER
+   SAVE PLAYER
 ========================================================= */
 
 async function savePlayerToDatabase(
@@ -295,20 +271,15 @@ async function savePlayerToDatabase(
     const player =
         players[username];
 
-
     if (!player) {
-
         return false;
-
     }
-
 
     const row =
         playerToDatabaseRow(
             username,
             player
         );
-
 
     try {
 
@@ -320,11 +291,9 @@ async function savePlayerToDatabase(
                 .upsert(
                     row,
                     {
-                        onConflict:
-                            "username"
+                        onConflict: "username"
                     }
                 );
-
 
         if (error) {
 
@@ -336,7 +305,6 @@ async function savePlayerToDatabase(
             return false;
 
         }
-
 
         return true;
 
@@ -355,7 +323,7 @@ async function savePlayerToDatabase(
 
 
 /* =========================================================
-   DELETE PLAYER FROM DATABASE
+   DELETE PLAYER
 ========================================================= */
 
 async function deletePlayerFromDatabase(
@@ -375,7 +343,6 @@ async function deletePlayerFromDatabase(
                     username
                 );
 
-
         if (error) {
 
             console.error(
@@ -386,7 +353,6 @@ async function deletePlayerFromDatabase(
             return false;
 
         }
-
 
         return true;
 
@@ -405,8 +371,7 @@ async function deletePlayerFromDatabase(
 
 
 /* =========================================================
-   INITIAL SAMPLE DATA
-   Only used if Supabase is completely empty.
+   EXAMPLE PLAYERS
 ========================================================= */
 
 function createDefaultPlayers() {
@@ -430,7 +395,6 @@ function createDefaultPlayers() {
 
         },
 
-
         SteveExample: {
 
             tiers: {
@@ -447,7 +411,6 @@ function createDefaultPlayers() {
             }
 
         },
-
 
         AlexExample: {
 
@@ -486,7 +449,6 @@ async function seedDatabaseIfEmpty() {
             .select("username")
             .limit(1);
 
-
     if (error) {
 
         console.error(
@@ -494,29 +456,29 @@ async function seedDatabaseIfEmpty() {
             error
         );
 
-        return;
+        return false;
 
     }
-
 
     if (
         data &&
         data.length > 0
     ) {
 
-        return;
+        return true;
 
     }
 
-
-    players =
+    const defaultPlayers =
         createDefaultPlayers();
-
 
     for (
         const username of
-        Object.keys(players)
+        Object.keys(defaultPlayers)
     ) {
+
+        players[username] =
+            defaultPlayers[username];
 
         await savePlayerToDatabase(
             username
@@ -524,17 +486,18 @@ async function seedDatabaseIfEmpty() {
 
     }
 
+    return true;
+
 }
 
 
 /* =========================================================
-   CALCULATE PLAYER POINTS
+   PLAYER POINTS
 ========================================================= */
 
 function getPlayerPoints(player) {
 
     let total = 0;
-
 
     if (
         !player ||
@@ -545,14 +508,10 @@ function getPlayerPoints(player) {
 
     }
 
-
-    for (
-        const mode of GAMEMODES
-    ) {
+    GAMEMODES.forEach(mode => {
 
         const tier =
             player.tiers[mode];
-
 
         if (
             tier &&
@@ -564,8 +523,7 @@ function getPlayerPoints(player) {
 
         }
 
-    }
-
+    });
 
     return total;
 
@@ -573,37 +531,28 @@ function getPlayerPoints(player) {
 
 
 /* =========================================================
-   GET PLAYER TIERS
+   PLAYER TIER ARRAY
 ========================================================= */
 
-function getPlayerTierArray(
-    player
-) {
+function getPlayerTierArray(player) {
 
     const tiers = [];
 
-
-    for (
-        const mode of GAMEMODES
-    ) {
+    GAMEMODES.forEach(mode => {
 
         const tier =
             player.tiers[mode];
 
-
         if (tier) {
 
             tiers.push({
-
                 mode: mode,
                 tier: tier
-
             });
 
         }
 
-    }
-
+    });
 
     return tiers;
 
@@ -617,49 +566,32 @@ function getPlayerTierArray(
 function tierClass(tier) {
 
     if (!tier) {
-
         return "";
-
     }
 
-
-    return (
-        "tier-" +
-        tier.toLowerCase()
-    );
+    return "tier-" + tier.toLowerCase();
 
 }
 
 
 /* =========================================================
-   CREATE TIER BADGE
+   TIER BADGE
 ========================================================= */
 
-function createTierBadge(
-    tier
-) {
+function createTierBadge(tier) {
 
     if (!tier) {
 
         return `
-
-            <span class="untested">
-                —
-            </span>
-
+            <span class="untested">—</span>
         `;
 
     }
 
-
     return `
-
         <span class="tier ${tierClass(tier)}">
-
             ${tier}
-
         </span>
-
     `;
 
 }
@@ -673,51 +605,41 @@ function getOverallRankings() {
 
     return Object.entries(players)
 
-        .map(
-            ([username, player]) => {
+        .map(([username, player]) => {
 
-                return {
+            return {
 
-                    username:
-                        username,
+                username: username,
 
-                    points:
-                        getPlayerPoints(
-                            player
-                        ),
+                points:
+                    getPlayerPoints(player),
 
-                    tiers:
-                        getPlayerTierArray(
-                            player
-                        )
+                tiers:
+                    getPlayerTierArray(player)
 
-                };
+            };
 
-            }
-        )
+        })
 
-        .sort(
-            (a, b) => {
+        .sort((a, b) => {
 
-                if (
-                    b.points !==
+            if (
+                b.points !==
+                a.points
+            ) {
+
+                return (
+                    b.points -
                     a.points
-                ) {
-
-                    return (
-                        b.points -
-                        a.points
-                    );
-
-                }
-
-
-                return a.username.localeCompare(
-                    b.username
                 );
 
             }
-        );
+
+            return a.username.localeCompare(
+                b.username
+            );
+
+        });
 
 }
 
@@ -726,64 +648,51 @@ function getOverallRankings() {
    GAMEMODE RANKINGS
 ========================================================= */
 
-function getGamemodeRankings(
-    mode
-) {
+function getGamemodeRankings(mode) {
 
     return Object.entries(players)
 
-        .map(
-            ([username, player]) => {
+        .map(([username, player]) => {
 
-                const tier =
-                    player.tiers[mode];
+            const tier =
+                player.tiers[mode];
 
+            return {
 
-                return {
+                username: username,
 
-                    username:
-                        username,
+                tier: tier,
 
-                    tier:
-                        tier,
+                points:
+                    tier
+                        ? TIER_POINTS[tier]
+                        : 0
 
-                    points:
-                        tier
-                            ? TIER_POINTS[tier]
-                            : 0
+            };
 
-                };
+        })
 
-            }
-        )
+        .filter(player => player.tier)
 
-        .filter(
-            player =>
-                player.tier
-        )
+        .sort((a, b) => {
 
-        .sort(
-            (a, b) => {
+            if (
+                b.points !==
+                a.points
+            ) {
 
-                if (
-                    b.points !==
+                return (
+                    b.points -
                     a.points
-                ) {
-
-                    return (
-                        b.points -
-                        a.points
-                    );
-
-                }
-
-
-                return a.username.localeCompare(
-                    b.username
                 );
 
             }
-        );
+
+            return a.username.localeCompare(
+                b.username
+            );
+
+        });
 
 }
 
@@ -798,22 +707,12 @@ function getRank(
 ) {
 
     if (index === 0) {
-
         return 1;
-
     }
 
-
-    const current =
-        rankings[index].points;
-
-    const previous =
-        rankings[index - 1].points;
-
-
     if (
-        current ===
-        previous
+        rankings[index].points ===
+        rankings[index - 1].points
     ) {
 
         return getRank(
@@ -823,36 +722,27 @@ function getRank(
 
     }
 
-
     return index + 1;
 
 }
 
 
 /* =========================================================
-   TOP 3 COLORS
+   RANK COLORS
 ========================================================= */
 
-function getRankClass(
-    rank
-) {
+function getRankClass(rank) {
 
     if (rank === 1) {
-
         return "rank-gold";
-
     }
 
     if (rank === 2) {
-
         return "rank-silver";
-
     }
 
     if (rank === 3) {
-
         return "rank-bronze";
-
     }
 
     return "";
@@ -869,59 +759,41 @@ function renderOverall() {
     const rankings =
         getOverallRankings();
 
-
     rankingTitle.textContent =
         "Overall Rankings";
 
-
     currentCategory.textContent =
         "OVERALL";
-
 
     if (
         rankings.length === 0
     ) {
 
         rankingList.innerHTML = `
-
             <div class="empty">
-
-                No players have been
-                added yet.
-
+                No players have been added yet.
             </div>
-
         `;
 
         return;
 
     }
 
-
     let html = `
 
         <div class="ranking-row header">
 
-            <div>
-                #
-            </div>
+            <div>#</div>
 
-            <div>
-                Player
-            </div>
+            <div>Player</div>
 
-            <div>
-                Points
-            </div>
+            <div>Points</div>
 
-            <div>
-                Rankings
-            </div>
+            <div>Rankings</div>
 
         </div>
 
     `;
-
 
     rankings.forEach(
         (player, index) => {
@@ -932,18 +804,14 @@ function renderOverall() {
                     rankings
                 );
 
-
             const rankClass =
-                getRankClass(
-                    rank
-                );
-
+                getRankClass(rank);
 
             const tierHTML =
                 player.tiers
+                    .map(item => {
 
-                    .map(
-                        item => `
+                        return `
 
                             <span
                                 class="tier-with-mode"
@@ -967,11 +835,10 @@ function renderOverall() {
 
                             </span>
 
-                        `
-                    )
+                        `;
 
+                    })
                     .join("");
-
 
             html += `
 
@@ -980,11 +847,8 @@ function renderOverall() {
                     <div
                         class="position ${rankClass}"
                     >
-
                         ${rank}
-
                     </div>
-
 
                     <div
                         class="player-name ${rankClass}"
@@ -992,25 +856,17 @@ function renderOverall() {
                             player.username
                         )}')"
                     >
-
                         ${escapeHTML(
                             player.username
                         )}
-
                     </div>
-
 
                     <div class="points">
-
                         ${player.points}
-
                     </div>
 
-
                     <div class="tier-list">
-
                         ${tierHTML}
-
                     </div>
 
                 </div>
@@ -1019,7 +875,6 @@ function renderOverall() {
 
         }
     );
-
 
     rankingList.innerHTML =
         html;
@@ -1031,68 +886,46 @@ function renderOverall() {
    GAMEMODE DISPLAY
 ========================================================= */
 
-function renderGamemode(
-    mode
-) {
+function renderGamemode(mode) {
 
     const rankings =
-        getGamemodeRankings(
-            mode
-        );
-
+        getGamemodeRankings(mode);
 
     rankingTitle.textContent =
         mode + " Rankings";
 
-
     currentCategory.textContent =
         mode.toUpperCase();
-
 
     if (
         rankings.length === 0
     ) {
 
         rankingList.innerHTML = `
-
             <div class="empty">
-
-                No players have been
-                tested in this gamemode yet.
-
+                No players have been tested in this gamemode yet.
             </div>
-
         `;
 
         return;
 
     }
 
-
     let html = `
 
         <div class="ranking-row header">
 
-            <div>
-                #
-            </div>
+            <div>#</div>
 
-            <div>
-                Player
-            </div>
+            <div>Player</div>
 
-            <div>
-                Tier
-            </div>
+            <div>Tier</div>
 
-            <div>
-                Points
-            </div>
+            <div>Points</div>
 
         </div>
 
     `;
-
 
     rankings.forEach(
         (player, index) => {
@@ -1103,45 +936,38 @@ function renderGamemode(
                     rankings
                 );
 
+            const rankClass =
+                getRankClass(rank);
 
             html += `
 
                 <div class="ranking-row">
 
-                    <div class="position">
-
+                    <div
+                        class="position ${rankClass}"
+                    >
                         ${rank}
-
                     </div>
 
-
                     <div
-                        class="player-name"
+                        class="player-name ${rankClass}"
                         onclick="openProfile('${escapeHTML(
                             player.username
                         )}')"
                     >
-
                         ${escapeHTML(
                             player.username
                         )}
-
                     </div>
 
-
                     <div>
-
                         ${createTierBadge(
                             player.tier
                         )}
-
                     </div>
 
-
                     <div class="points">
-
                         ${player.points}
-
                     </div>
 
                 </div>
@@ -1150,7 +976,6 @@ function renderGamemode(
 
         }
     );
-
 
     rankingList.innerHTML =
         html;
@@ -1186,54 +1011,46 @@ function renderMode() {
    GAMEMODE BUTTONS
 ========================================================= */
 
-modeButtons.forEach(
-    button => {
+modeButtons.forEach(button => {
 
-        button.addEventListener(
-            "click",
-            () => {
+    button.addEventListener(
+        "click",
+        () => {
 
-                if (
-                    button.id ===
-                    "editButton"
-                ) {
+            if (
+                button.id ===
+                "editButton"
+            ) {
 
-                    return;
+                return;
 
-                }
+            }
 
+            modeButtons.forEach(btn => {
 
-                modeButtons.forEach(
-                    btn => {
-
-                        btn.classList.remove(
-                            "active"
-                        );
-
-                    }
-                );
-
-
-                button.classList.add(
+                btn.classList.remove(
                     "active"
                 );
 
+            });
 
-                currentMode =
-                    button.dataset.mode;
+            button.classList.add(
+                "active"
+            );
 
+            currentMode =
+                button.dataset.mode;
 
-                renderMode();
+            renderMode();
 
-            }
-        );
+        }
+    );
 
-    }
-);
+});
 
 
 /* =========================================================
-   PLAYER PROFILE
+   PROFILE
 ========================================================= */
 
 const profileOverlay =
@@ -1262,93 +1079,64 @@ const profileTiers =
     );
 
 
-function openProfile(
-    username
-) {
+function openProfile(username) {
 
     const player =
         players[username];
 
-
     if (!player) {
-
         return;
-
     }
-
 
     profileName.textContent =
         username;
 
-
     profilePoints.textContent =
         "Overall: " +
-        getPlayerPoints(
-            player
-        ) +
+        getPlayerPoints(player) +
         " points";
-
 
     profileAvatar.src =
         "https://mc-heads.net/avatar/" +
-        encodeURIComponent(
-            username
-        ) +
+        encodeURIComponent(username) +
         "/96";
-
 
     let html = "";
 
+    GAMEMODES.forEach(mode => {
 
-    GAMEMODES.forEach(
-        mode => {
+        const tier =
+            player.tiers[mode];
 
-            const tier =
-                player.tiers[mode];
+        html += `
 
+            <div class="profile-tier">
 
-            html += `
+                <span>
 
-                <div class="profile-tier">
+                    ${getModeIcon(mode)}
+                    ${mode}
 
-                    <span>
+                </span>
 
-                        ${getModeIcon(
-                            mode
-                        )}
-
-                        ${mode}
-
-                    </span>
-
-
-                    ${
-                        tier
-
-                        ? createTierBadge(
-                            tier
-                        )
-
+                ${
+                    tier
+                        ? createTierBadge(tier)
                         : `
-                            <span
-                                class="untested"
-                            >
+                            <span class="untested">
                                 —
                             </span>
                         `
-                    }
+                }
 
-                </div>
+            </div>
 
-            `;
+        `;
 
-        }
-    );
-
+    });
 
     profileTiers.innerHTML =
         html;
-
 
     profileOverlay.classList.remove(
         "hidden"
@@ -1366,9 +1154,7 @@ window.openProfile =
 ========================================================= */
 
 document
-    .getElementById(
-        "closeProfile"
-    )
+    .getElementById("closeProfile")
     .addEventListener(
         "click",
         () => {
@@ -1413,10 +1199,8 @@ playerSearch.addEventListener(
                 .trim()
                 .toLowerCase();
 
-
         searchResults.innerHTML =
             "";
-
 
         if (!query) {
 
@@ -1427,84 +1211,64 @@ playerSearch.addEventListener(
 
         }
 
-
         const matches =
             Object.keys(players)
-
-                .filter(
-                    username =>
-                        username
-                            .toLowerCase()
-                            .includes(
-                                query
-                            )
+                .filter(username =>
+                    username
+                        .toLowerCase()
+                        .includes(query)
                 )
-
                 .slice(0, 8);
-
 
         if (
             matches.length === 0
         ) {
 
             searchResults.innerHTML = `
-
                 <div class="search-result">
-
                     No players found.
-
                 </div>
-
             `;
 
         } else {
 
-            matches.forEach(
-                username => {
+            matches.forEach(username => {
 
-                    const result =
-                        document.createElement(
-                            "div"
+                const result =
+                    document.createElement(
+                        "div"
+                    );
+
+                result.className =
+                    "search-result";
+
+                result.textContent =
+                    username;
+
+                result.addEventListener(
+                    "click",
+                    () => {
+
+                        openProfile(
+                            username
                         );
 
+                        playerSearch.value =
+                            "";
 
-                    result.className =
-                        "search-result";
+                        searchResults.style.display =
+                            "none";
 
+                    }
+                );
 
-                    result.textContent =
-                        username;
+                searchResults.appendChild(
+                    result
+                );
 
-
-                    result.addEventListener(
-                        "click",
-                        () => {
-
-                            openProfile(
-                                username
-                            );
-
-
-                            playerSearch.value =
-                                "";
-
-
-                            searchResults.style.display =
-                                "none";
-
-                        }
-                    );
-
-
-                    searchResults.appendChild(
-                        result
-                    );
-
-                }
-            );
+            });
 
         }
-
 
         searchResults.style.display =
             "block";
@@ -1552,9 +1316,7 @@ const editorOverlay =
 
 
 document
-    .getElementById(
-        "editButton"
-    )
+    .getElementById("editButton")
     .addEventListener(
         "click",
         () => {
@@ -1565,13 +1327,11 @@ document
                 )
                 .value = "";
 
-
             document
                 .getElementById(
                     "loginMessage"
                 )
                 .textContent = "";
-
 
             loginOverlay.classList.remove(
                 "hidden"
@@ -1582,9 +1342,7 @@ document
 
 
 document
-    .getElementById(
-        "closeLogin"
-    )
+    .getElementById("closeLogin")
     .addEventListener(
         "click",
         () => {
@@ -1598,9 +1356,7 @@ document
 
 
 document
-    .getElementById(
-        "loginButton"
-    )
+    .getElementById("loginButton")
     .addEventListener(
         "click",
         loginTester
@@ -1608,9 +1364,7 @@ document
 
 
 document
-    .getElementById(
-        "testerPassword"
-    )
+    .getElementById("testerPassword")
     .addEventListener(
         "keydown",
         event => {
@@ -1637,12 +1391,10 @@ function loginTester() {
             )
             .value;
 
-
     const message =
         document.getElementById(
             "loginMessage"
         );
-
 
     if (
         password ===
@@ -1653,11 +1405,9 @@ function loginTester() {
             "hidden"
         );
 
-
         editorOverlay.classList.remove(
             "hidden"
         );
-
 
         message.textContent =
             "";
@@ -1666,7 +1416,6 @@ function loginTester() {
 
         message.textContent =
             "Incorrect password.";
-
 
         message.style.color =
             "#ff7777";
@@ -1681,9 +1430,7 @@ function loginTester() {
 ========================================================= */
 
 document
-    .getElementById(
-        "closeEditor"
-    )
+    .getElementById("closeEditor")
     .addEventListener(
         "click",
         () => {
@@ -1697,13 +1444,11 @@ document
 
 
 /* =========================================================
-   SAVE / EDIT TIER
+   SAVE TIER
 ========================================================= */
 
 document
-    .getElementById(
-        "saveTier"
-    )
+    .getElementById("saveTier")
     .addEventListener(
         "click",
         saveTier
@@ -1720,14 +1465,12 @@ async function saveTier() {
             .value
             .trim();
 
-
     const gamemode =
         document
             .getElementById(
                 "editGamemode"
             )
             .value;
-
 
     const tier =
         document
@@ -1736,28 +1479,23 @@ async function saveTier() {
             )
             .value;
 
-
     const message =
         document
             .getElementById(
                 "saveMessage"
             );
 
-
     if (!username) {
 
         message.textContent =
             "Enter a Minecraft username.";
 
-
         message.style.color =
             "#ff7777";
-
 
         return;
 
     }
-
 
     /* Create player if needed */
 
@@ -1766,35 +1504,28 @@ async function saveTier() {
     ) {
 
         players[username] = {
-
             tiers: {}
-
         };
 
     }
 
-
     /* Make sure all gamemodes exist */
 
-    GAMEMODES.forEach(
-        mode => {
+    GAMEMODES.forEach(mode => {
 
-            if (
-                !(mode in
-                    players[username].tiers)
-            ) {
+        if (
+            !(mode in players[username].tiers)
+        ) {
 
-                players[username]
-                    .tiers[mode] =
-                    null;
-
-            }
+            players[username]
+                .tiers[mode] =
+                null;
 
         }
-    );
 
+    });
 
-    /* Set or remove tier */
+    /* Set tier */
 
     if (
         tier ===
@@ -1813,19 +1544,16 @@ async function saveTier() {
 
     }
 
-
     message.textContent =
         "Saving...";
 
     message.style.color =
         "#ffffff";
 
-
     const success =
         await savePlayerToDatabase(
             username
         );
-
 
     if (!success) {
 
@@ -1839,7 +1567,6 @@ async function saveTier() {
 
     }
 
-
     message.textContent =
         username +
         "'s " +
@@ -1849,14 +1576,13 @@ async function saveTier() {
     message.style.color =
         "#7ee2a8";
 
-
     renderMode();
 
 }
 
 
 /* =========================================================
-   DELETE PLAYER
+   DELETE PLAYER BUTTON
 ========================================================= */
 
 function addDeleteButton() {
@@ -1866,37 +1592,28 @@ function addDeleteButton() {
             "saveTier"
         );
 
-
     if (!saveButton) {
-
         return;
-
     }
-
 
     if (
         document.getElementById(
             "deletePlayer"
         )
     ) {
-
         return;
-
     }
-
 
     const deleteButton =
         document.createElement(
             "button"
         );
 
-
     deleteButton.id =
         "deletePlayer";
 
     deleteButton.textContent =
         "Delete Player";
-
 
     deleteButton.style.marginTop =
         "10px";
@@ -1916,11 +1633,15 @@ function addDeleteButton() {
     deleteButton.style.cursor =
         "pointer";
 
+    deleteButton.style.width =
+        "100%";
+
+    deleteButton.style.borderRadius =
+        "8px";
 
     saveButton.parentElement.appendChild(
         deleteButton
     );
-
 
     deleteButton.addEventListener(
         "click",
@@ -1929,6 +1650,10 @@ function addDeleteButton() {
 
 }
 
+
+/* =========================================================
+   DELETE PLAYER
+========================================================= */
 
 async function deletePlayer() {
 
@@ -1940,13 +1665,11 @@ async function deletePlayer() {
             .value
             .trim();
 
-
     const message =
         document
             .getElementById(
                 "saveMessage"
             );
-
 
     if (!username) {
 
@@ -1959,7 +1682,6 @@ async function deletePlayer() {
         return;
 
     }
-
 
     if (
         !players[username]
@@ -1975,7 +1697,6 @@ async function deletePlayer() {
 
     }
 
-
     const confirmed =
         confirm(
             "Are you sure you want to delete " +
@@ -1983,23 +1704,17 @@ async function deletePlayer() {
             " from NA Tiers?"
         );
 
-
     if (!confirmed) {
-
         return;
-
     }
-
 
     message.textContent =
         "Deleting...";
-
 
     const success =
         await deletePlayerFromDatabase(
             username
         );
-
 
     if (!success) {
 
@@ -2013,9 +1728,7 @@ async function deletePlayer() {
 
     }
 
-
     delete players[username];
-
 
     message.textContent =
         username +
@@ -2024,45 +1737,19 @@ async function deletePlayer() {
     message.style.color =
         "#7ee2a8";
 
-
     renderMode();
 
 }
 
 
 /* =========================================================
-   ESCAPE HTML
-========================================================= */
-
-function escapeHTML(
-    text
-) {
-
-    const div =
-        document.createElement(
-            "div"
-        );
-
-
-    div.textContent =
-        text;
-
-
-    return div.innerHTML;
-
-}
-
-
-/* =========================================================
-   REALTIME DATABASE UPDATES
+   REALTIME UPDATES
 ========================================================= */
 
 function startRealtimeUpdates() {
 
     supabaseClient
-        .channel(
-            "na-tiers-live"
-        )
+        .channel("na-tiers-live")
         .on(
             "postgres_changes",
             {
@@ -2073,27 +1760,42 @@ function startRealtimeUpdates() {
             async () => {
 
                 console.log(
-                    "NA Tiers database changed. Reloading..."
+                    "NA Tiers database changed."
                 );
 
-
                 await loadPlayersFromDatabase();
-
 
                 renderMode();
 
             }
         )
-        .subscribe(
-            status => {
+        .subscribe(status => {
 
-                console.log(
-                    "Realtime status:",
-                    status
-                );
+            console.log(
+                "Realtime status:",
+                status
+            );
 
-            }
+        });
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(text) {
+
+    const div =
+        document.createElement(
+            "div"
         );
+
+    div.textContent =
+        text;
+
+    return div.innerHTML;
 
 }
 
@@ -2102,11 +1804,14 @@ function startRealtimeUpdates() {
    INITIALIZE
 ========================================================= */
 
-async function initializeNA Tiers() {
+async function initializeNATiers() {
+
+    console.log(
+        "Initializing NA Tiers..."
+    );
 
     const loaded =
         await loadPlayersFromDatabase();
-
 
     if (!loaded) {
 
@@ -2114,14 +1819,21 @@ async function initializeNA Tiers() {
             "NA Tiers could not connect to Supabase."
         );
 
+        /*
+           Still render the page so the
+           navigation/editor don't appear
+           completely broken.
+        */
+
+        renderMode();
+
         return;
 
     }
 
-
     /*
-       If database is empty, put the
-       original example players into it.
+       If the database has no players,
+       create the example players.
     */
 
     if (
@@ -2134,16 +1846,21 @@ async function initializeNA Tiers() {
 
     }
 
-
     renderMode();
-
 
     addDeleteButton();
 
-
     startRealtimeUpdates();
+
+    console.log(
+        "NA Tiers initialized successfully."
+    );
 
 }
 
+
+/* =========================================================
+   START WEBSITE
+========================================================= */
 
 initializeNATiers();
