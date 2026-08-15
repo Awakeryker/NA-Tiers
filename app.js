@@ -239,8 +239,15 @@ async function loadPlayersFromDatabase() {
         if (error) {
 
             console.error(
-                "Supabase load error:",
+                "SUPABASE LOAD ERROR:",
                 error
+            );
+
+            alert(
+                "Supabase load error:\n\n" +
+                error.message +
+                "\n\nCode: " +
+                error.code
             );
 
             return false;
@@ -268,8 +275,13 @@ async function loadPlayersFromDatabase() {
     } catch (error) {
 
         console.error(
-            "Could not connect to Supabase:",
+            "SUPABASE LOAD ERROR:",
             error
+        );
+
+        alert(
+            "Supabase connection error:\n\n" +
+            error.message
         );
 
         return false;
@@ -400,8 +412,15 @@ async function deletePlayerFromDatabase(
         if (error) {
 
             console.error(
-                "Supabase delete error:",
+                "SUPABASE DELETE ERROR:",
                 error
+            );
+
+            alert(
+                "Supabase delete error:\n\n" +
+                error.message +
+                "\n\nCode: " +
+                error.code
             );
 
             return false;
@@ -409,13 +428,26 @@ async function deletePlayerFromDatabase(
         }
 
 
+        console.log(
+            "Player deleted successfully:",
+            username
+        );
+
+
         return true;
 
     } catch (error) {
 
         console.error(
-            "Supabase delete error:",
+            "SUPABASE DELETE ERROR:",
             error
+        );
+
+        alert(
+            "Supabase delete error:\n\n" +
+            error.message +
+            "\n\nCode: " +
+            (error.code || "Unknown")
         );
 
         return false;
@@ -426,121 +458,67 @@ async function deletePlayerFromDatabase(
 
 
 /* =========================================================
-   INITIAL SAMPLE DATA
+   REMOVE OLD EXAMPLE ACCOUNTS
+   These are deleted automatically once.
 ========================================================= */
 
-function createDefaultPlayers() {
+async function removeExamplePlayers() {
 
-    return {
+    const examplePlayers = [
 
-        DreamExample: {
+        "DreamExample",
+        "SteveExample",
+        "AlexExample"
 
-            tiers: {
-
-                "Diamond SMP": "HT2",
-                "Sword": "HT1",
-                "Axe": "HT3",
-                "Neth SMP": "LT2",
-                "UHC": "HT3",
-                "Cart": null,
-                "Spear & Mace": "HT4",
-                "Crystal": "LT1"
-
-            }
-
-        },
-
-
-        SteveExample: {
-
-            tiers: {
-
-                "Diamond SMP": "HT3",
-                "Sword": "LT1",
-                "Axe": "HT2",
-                "Neth SMP": null,
-                "UHC": "HT4",
-                "Cart": "LT3",
-                "Spear & Mace": null,
-                "Crystal": "HT3"
-
-            }
-
-        },
-
-
-        AlexExample: {
-
-            tiers: {
-
-                "Diamond SMP": "LT2",
-                "Sword": "HT3",
-                "Axe": null,
-                "Neth SMP": "HT3",
-                "UHC": "LT2",
-                "Cart": null,
-                "Spear & Mace": "LT3",
-                "Crystal": null
-
-            }
-
-        }
-
-    };
-
-}
-
-
-/* =========================================================
-   SEED DATABASE IF EMPTY
-========================================================= */
-
-async function seedDatabaseIfEmpty() {
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("players")
-            .select("username")
-            .limit(1);
-
-
-    if (error) {
-
-        console.error(
-            "Could not check database:",
-            error
-        );
-
-        return;
-
-    }
-
-
-    if (
-        data &&
-        data.length > 0
-    ) {
-
-        return;
-
-    }
-
-
-    players =
-        createDefaultPlayers();
+    ];
 
 
     for (
-        const username of
-        Object.keys(players)
+        const username of examplePlayers
     ) {
 
-        await savePlayerToDatabase(
-            username
-        );
+        try {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("players")
+                    .delete()
+                    .eq(
+                        "username",
+                        username
+                    );
+
+
+            if (error) {
+
+                console.error(
+                    "Could not remove example player:",
+                    username,
+                    error
+                );
+
+                continue;
+
+            }
+
+
+            console.log(
+                "Removed example player:",
+                username
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Error removing example player:",
+                username,
+                error
+            );
+
+        }
 
     }
 
@@ -1318,11 +1296,13 @@ function openProfile(
                         )
 
                         : `
+
                             <span
                                 class="untested"
                             >
                                 —
                             </span>
+
                         `
                     }
 
@@ -2096,6 +2076,23 @@ function startRealtimeUpdates() {
 
 async function initializeNATiers() {
 
+    console.log(
+        "Initializing NA Tiers..."
+    );
+
+
+    /*
+       First remove the old example
+       accounts from Supabase.
+    */
+
+    await removeExamplePlayers();
+
+
+    /*
+       Now load the actual database.
+    */
+
     const loaded =
         await loadPlayersFromDatabase();
 
@@ -2111,22 +2108,6 @@ async function initializeNATiers() {
     }
 
 
-    /*
-       If database is empty, put the
-       example players into it.
-    */
-
-    if (
-        Object.keys(players).length === 0
-    ) {
-
-        await seedDatabaseIfEmpty();
-
-        await loadPlayersFromDatabase();
-
-    }
-
-
     renderMode();
 
 
@@ -2134,6 +2115,11 @@ async function initializeNATiers() {
 
 
     startRealtimeUpdates();
+
+
+    console.log(
+        "NA Tiers initialized successfully."
+    );
 
 }
 
