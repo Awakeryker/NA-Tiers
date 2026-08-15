@@ -6,7 +6,7 @@ const SUPABASE_URL =
     "https://gcoqlvjndhgqlukpgfqm.supabase.co";
 
 const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjb3FsdmpuZGhncWx1a3BnZnFtIiwicm9iIjoxNzY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCjJZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjb3FsdmpuZGhncWx1a3BnZnFtIiwicm9sZSI6IkFub24iLCJpYXQiOjE3ODY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCjJZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
 
 const supabaseClient =
     window.supabase.createClient(
@@ -305,6 +305,12 @@ async function savePlayerToDatabase(
         );
 
 
+    console.log(
+        "Attempting to save player:",
+        row
+    );
+
+
     try {
 
         const {
@@ -328,17 +334,11 @@ async function savePlayerToDatabase(
                 error
             );
 
-            /*
-             * TEMPORARY DEBUG MESSAGE
-             *
-             * This will show the real Supabase
-             * error instead of only saying:
-             * "Could not save to database."
-             */
-
             alert(
                 "Supabase error:\n\n" +
-                error.message
+                error.message +
+                "\n\nCode: " +
+                error.code
             );
 
             return false;
@@ -346,18 +346,26 @@ async function savePlayerToDatabase(
         }
 
 
+        console.log(
+            "Player saved successfully:",
+            username
+        );
+
+
         return true;
 
     } catch (error) {
 
         console.error(
-            "Supabase save error:",
+            "SUPABASE SAVE ERROR:",
             error
         );
 
         alert(
             "Supabase error:\n\n" +
-            error.message
+            error.message +
+            "\n\nCode: " +
+            (error.code || "Unknown")
         );
 
         return false;
@@ -914,21 +922,13 @@ function renderOverall() {
 
         <div class="ranking-row header">
 
-            <div>
-                #
-            </div>
+            <div>#</div>
 
-            <div>
-                Player
-            </div>
+            <div>Player</div>
 
-            <div>
-                Points
-            </div>
+            <div>Points</div>
 
-            <div>
-                Rankings
-            </div>
+            <div>Rankings</div>
 
         </div>
 
@@ -992,9 +992,7 @@ function renderOverall() {
                     <div
                         class="position ${rankClass}"
                     >
-
                         ${rank}
-
                     </div>
 
 
@@ -1004,25 +1002,19 @@ function renderOverall() {
                             player.username
                         )}')"
                     >
-
                         ${escapeHTML(
                             player.username
                         )}
-
                     </div>
 
 
                     <div class="points">
-
                         ${player.points}
-
                     </div>
 
 
                     <div class="tier-list">
-
                         ${tierHTML}
-
                     </div>
 
                 </div>
@@ -1085,21 +1077,13 @@ function renderGamemode(
 
         <div class="ranking-row header">
 
-            <div>
-                #
-            </div>
+            <div>#</div>
 
-            <div>
-                Player
-            </div>
+            <div>Player</div>
 
-            <div>
-                Tier
-            </div>
+            <div>Tier</div>
 
-            <div>
-                Points
-            </div>
+            <div>Points</div>
 
         </div>
 
@@ -1121,9 +1105,7 @@ function renderGamemode(
                 <div class="ranking-row">
 
                     <div class="position">
-
                         ${rank}
-
                     </div>
 
 
@@ -1133,27 +1115,21 @@ function renderGamemode(
                             player.username
                         )}')"
                     >
-
                         ${escapeHTML(
                             player.username
                         )}
-
                     </div>
 
 
                     <div>
-
                         ${createTierBadge(
                             player.tier
                         )}
-
                     </div>
 
 
                     <div class="points">
-
                         ${player.points}
-
                     </div>
 
                 </div>
@@ -1462,9 +1438,7 @@ playerSearch.addEventListener(
             searchResults.innerHTML = `
 
                 <div class="search-result">
-
                     No players found.
-
                 </div>
 
             `;
@@ -1906,6 +1880,7 @@ function addDeleteButton() {
     deleteButton.id =
         "deletePlayer";
 
+
     deleteButton.textContent =
         "Delete Player";
 
@@ -1913,17 +1888,22 @@ function addDeleteButton() {
     deleteButton.style.marginTop =
         "10px";
 
+
     deleteButton.style.background =
         "#7a2525";
+
 
     deleteButton.style.color =
         "white";
 
+
     deleteButton.style.border =
         "none";
 
+
     deleteButton.style.padding =
         "10px 16px";
+
 
     deleteButton.style.cursor =
         "pointer";
