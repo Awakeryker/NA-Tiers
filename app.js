@@ -1,10 +1,4 @@
 /* =========================================================
-   NA TIERS
-   Supabase-powered website logic
-========================================================= */
-
-
-/* =========================================================
    SUPABASE
 ========================================================= */
 
@@ -12,7 +6,7 @@ const SUPABASE_URL =
     "https://gcoqlvjndhgqlukpgfqm.supabase.co";
 
 const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXAiLCJpYXQiOjE3ODY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCjJZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjb3FsdmpuZGhncWx1a3BnZnFtIiwicm9iIjoxNzY3MDY4MTAsImV4cCI6MjEwMjI4MjgxMH0.uCVM54HCjJZEDWAO18ZQbdV6WbHJs5sd-Rkm2XbOa5g";
 
 const supabaseClient =
     window.supabase.createClient(
@@ -115,17 +109,10 @@ const TESTER_PASSWORD =
 
 
 /* =========================================================
-   PLAYER DATA
+   PLAYER DATABASE
 ========================================================= */
 
 let players = {};
-
-
-/* =========================================================
-   CURRENT MODE
-========================================================= */
-
-let currentMode = "Overall";
 
 
 /* =========================================================
@@ -133,51 +120,75 @@ let currentMode = "Overall";
 ========================================================= */
 
 const rankingList =
-    document.getElementById("rankingList");
+    document.getElementById(
+        "rankingList"
+    );
 
 const rankingTitle =
-    document.getElementById("rankingTitle");
+    document.getElementById(
+        "rankingTitle"
+    );
 
 const currentCategory =
-    document.getElementById("currentCategory");
+    document.getElementById(
+        "currentCategory"
+    );
 
 const modeButtons =
-    document.querySelectorAll(".mode");
+    document.querySelectorAll(
+        ".mode"
+    );
 
 const playerSearch =
-    document.getElementById("playerSearch");
+    document.getElementById(
+        "playerSearch"
+    );
 
 const searchResults =
-    document.getElementById("searchResults");
+    document.getElementById(
+        "searchResults"
+    );
 
 
 /* =========================================================
-   DATABASE ROW → PLAYER
+   CURRENT GAMEMODE
+========================================================= */
+
+let currentMode =
+    "Overall";
+
+
+/* =========================================================
+   CONVERT DATABASE ROW → WEBSITE PLAYER
 ========================================================= */
 
 function databaseRowToPlayer(row) {
 
     const tiers = {};
 
-    GAMEMODES.forEach(mode => {
+    GAMEMODES.forEach(
+        mode => {
 
-        const column =
-            MODE_COLUMNS[mode];
+            const column =
+                MODE_COLUMNS[mode];
 
-        tiers[mode] =
-            row[column] || null;
+            tiers[mode] =
+                row[column] || null;
 
-    });
+        }
+    );
 
     return {
+
         tiers: tiers
+
     };
 
 }
 
 
 /* =========================================================
-   PLAYER → DATABASE ROW
+   CONVERT WEBSITE PLAYER → DATABASE ROW
 ========================================================= */
 
 function playerToDatabaseRow(
@@ -186,18 +197,22 @@ function playerToDatabaseRow(
 ) {
 
     const row = {
+
         username: username
+
     };
 
-    GAMEMODES.forEach(mode => {
+    GAMEMODES.forEach(
+        mode => {
 
-        const column =
-            MODE_COLUMNS[mode];
+            const column =
+                MODE_COLUMNS[mode];
 
-        row[column] =
-            player.tiers[mode] || null;
+            row[column] =
+                player.tiers[mode] || null;
 
-    });
+        }
+    );
 
     return row;
 
@@ -205,7 +220,7 @@ function playerToDatabaseRow(
 
 
 /* =========================================================
-   LOAD PLAYERS
+   LOAD PLAYERS FROM SUPABASE
 ========================================================= */
 
 async function loadPlayersFromDatabase() {
@@ -220,6 +235,7 @@ async function loadPlayersFromDatabase() {
                 .from("players")
                 .select("*");
 
+
         if (error) {
 
             console.error(
@@ -231,18 +247,21 @@ async function loadPlayersFromDatabase() {
 
         }
 
+
         players = {};
 
-        data.forEach(row => {
 
-            if (!row.username) {
-                return;
+        data.forEach(
+            row => {
+
+                players[row.username] =
+                    databaseRowToPlayer(
+                        row
+                    );
+
             }
+        );
 
-            players[row.username] =
-                databaseRowToPlayer(row);
-
-        });
 
         return true;
 
@@ -261,7 +280,7 @@ async function loadPlayersFromDatabase() {
 
 
 /* =========================================================
-   SAVE PLAYER
+   SAVE / UPDATE ONE PLAYER
 ========================================================= */
 
 async function savePlayerToDatabase(
@@ -271,15 +290,20 @@ async function savePlayerToDatabase(
     const player =
         players[username];
 
+
     if (!player) {
+
         return false;
+
     }
+
 
     const row =
         playerToDatabaseRow(
             username,
             player
         );
+
 
     try {
 
@@ -291,20 +315,36 @@ async function savePlayerToDatabase(
                 .upsert(
                     row,
                     {
-                        onConflict: "username"
+                        onConflict:
+                            "username"
                     }
                 );
+
 
         if (error) {
 
             console.error(
-                "Supabase save error:",
+                "SUPABASE SAVE ERROR:",
                 error
+            );
+
+            /*
+             * TEMPORARY DEBUG MESSAGE
+             *
+             * This will show the real Supabase
+             * error instead of only saying:
+             * "Could not save to database."
+             */
+
+            alert(
+                "Supabase error:\n\n" +
+                error.message
             );
 
             return false;
 
         }
+
 
         return true;
 
@@ -315,6 +355,11 @@ async function savePlayerToDatabase(
             error
         );
 
+        alert(
+            "Supabase error:\n\n" +
+            error.message
+        );
+
         return false;
 
     }
@@ -323,7 +368,7 @@ async function savePlayerToDatabase(
 
 
 /* =========================================================
-   DELETE PLAYER
+   DELETE PLAYER FROM DATABASE
 ========================================================= */
 
 async function deletePlayerFromDatabase(
@@ -343,6 +388,7 @@ async function deletePlayerFromDatabase(
                     username
                 );
 
+
         if (error) {
 
             console.error(
@@ -353,6 +399,7 @@ async function deletePlayerFromDatabase(
             return false;
 
         }
+
 
         return true;
 
@@ -371,7 +418,7 @@ async function deletePlayerFromDatabase(
 
 
 /* =========================================================
-   EXAMPLE PLAYERS
+   INITIAL SAMPLE DATA
 ========================================================= */
 
 function createDefaultPlayers() {
@@ -395,6 +442,7 @@ function createDefaultPlayers() {
 
         },
 
+
         SteveExample: {
 
             tiers: {
@@ -411,6 +459,7 @@ function createDefaultPlayers() {
             }
 
         },
+
 
         AlexExample: {
 
@@ -449,6 +498,7 @@ async function seedDatabaseIfEmpty() {
             .select("username")
             .limit(1);
 
+
     if (error) {
 
         console.error(
@@ -456,29 +506,29 @@ async function seedDatabaseIfEmpty() {
             error
         );
 
-        return false;
+        return;
 
     }
+
 
     if (
         data &&
         data.length > 0
     ) {
 
-        return true;
+        return;
 
     }
 
-    const defaultPlayers =
+
+    players =
         createDefaultPlayers();
+
 
     for (
         const username of
-        Object.keys(defaultPlayers)
+        Object.keys(players)
     ) {
-
-        players[username] =
-            defaultPlayers[username];
 
         await savePlayerToDatabase(
             username
@@ -486,18 +536,17 @@ async function seedDatabaseIfEmpty() {
 
     }
 
-    return true;
-
 }
 
 
 /* =========================================================
-   PLAYER POINTS
+   CALCULATE PLAYER POINTS
 ========================================================= */
 
 function getPlayerPoints(player) {
 
     let total = 0;
+
 
     if (
         !player ||
@@ -508,10 +557,14 @@ function getPlayerPoints(player) {
 
     }
 
-    GAMEMODES.forEach(mode => {
+
+    for (
+        const mode of GAMEMODES
+    ) {
 
         const tier =
             player.tiers[mode];
+
 
         if (
             tier &&
@@ -523,7 +576,8 @@ function getPlayerPoints(player) {
 
         }
 
-    });
+    }
+
 
     return total;
 
@@ -531,28 +585,37 @@ function getPlayerPoints(player) {
 
 
 /* =========================================================
-   PLAYER TIER ARRAY
+   GET PLAYER TIERS
 ========================================================= */
 
-function getPlayerTierArray(player) {
+function getPlayerTierArray(
+    player
+) {
 
     const tiers = [];
 
-    GAMEMODES.forEach(mode => {
+
+    for (
+        const mode of GAMEMODES
+    ) {
 
         const tier =
             player.tiers[mode];
 
+
         if (tier) {
 
             tiers.push({
+
                 mode: mode,
                 tier: tier
+
             });
 
         }
 
-    });
+    }
+
 
     return tiers;
 
@@ -566,32 +629,49 @@ function getPlayerTierArray(player) {
 function tierClass(tier) {
 
     if (!tier) {
+
         return "";
+
     }
 
-    return "tier-" + tier.toLowerCase();
+
+    return (
+        "tier-" +
+        tier.toLowerCase()
+    );
 
 }
 
 
 /* =========================================================
-   TIER BADGE
+   CREATE TIER BADGE
 ========================================================= */
 
-function createTierBadge(tier) {
+function createTierBadge(
+    tier
+) {
 
     if (!tier) {
 
         return `
-            <span class="untested">—</span>
+
+            <span class="untested">
+                —
+            </span>
+
         `;
 
     }
 
+
     return `
+
         <span class="tier ${tierClass(tier)}">
+
             ${tier}
+
         </span>
+
     `;
 
 }
@@ -605,41 +685,51 @@ function getOverallRankings() {
 
     return Object.entries(players)
 
-        .map(([username, player]) => {
+        .map(
+            ([username, player]) => {
 
-            return {
+                return {
 
-                username: username,
+                    username:
+                        username,
 
-                points:
-                    getPlayerPoints(player),
+                    points:
+                        getPlayerPoints(
+                            player
+                        ),
 
-                tiers:
-                    getPlayerTierArray(player)
+                    tiers:
+                        getPlayerTierArray(
+                            player
+                        )
 
-            };
+                };
 
-        })
+            }
+        )
 
-        .sort((a, b) => {
+        .sort(
+            (a, b) => {
 
-            if (
-                b.points !==
-                a.points
-            ) {
-
-                return (
-                    b.points -
+                if (
+                    b.points !==
                     a.points
+                ) {
+
+                    return (
+                        b.points -
+                        a.points
+                    );
+
+                }
+
+
+                return a.username.localeCompare(
+                    b.username
                 );
 
             }
-
-            return a.username.localeCompare(
-                b.username
-            );
-
-        });
+        );
 
 }
 
@@ -648,51 +738,64 @@ function getOverallRankings() {
    GAMEMODE RANKINGS
 ========================================================= */
 
-function getGamemodeRankings(mode) {
+function getGamemodeRankings(
+    mode
+) {
 
     return Object.entries(players)
 
-        .map(([username, player]) => {
+        .map(
+            ([username, player]) => {
 
-            const tier =
-                player.tiers[mode];
+                const tier =
+                    player.tiers[mode];
 
-            return {
 
-                username: username,
+                return {
 
-                tier: tier,
+                    username:
+                        username,
 
-                points:
-                    tier
-                        ? TIER_POINTS[tier]
-                        : 0
+                    tier:
+                        tier,
 
-            };
+                    points:
+                        tier
+                            ? TIER_POINTS[tier]
+                            : 0
 
-        })
+                };
 
-        .filter(player => player.tier)
+            }
+        )
 
-        .sort((a, b) => {
+        .filter(
+            player =>
+                player.tier
+        )
 
-            if (
-                b.points !==
-                a.points
-            ) {
+        .sort(
+            (a, b) => {
 
-                return (
-                    b.points -
+                if (
+                    b.points !==
                     a.points
+                ) {
+
+                    return (
+                        b.points -
+                        a.points
+                    );
+
+                }
+
+
+                return a.username.localeCompare(
+                    b.username
                 );
 
             }
-
-            return a.username.localeCompare(
-                b.username
-            );
-
-        });
+        );
 
 }
 
@@ -707,12 +810,22 @@ function getRank(
 ) {
 
     if (index === 0) {
+
         return 1;
+
     }
 
+
+    const current =
+        rankings[index].points;
+
+    const previous =
+        rankings[index - 1].points;
+
+
     if (
-        rankings[index].points ===
-        rankings[index - 1].points
+        current ===
+        previous
     ) {
 
         return getRank(
@@ -722,27 +835,36 @@ function getRank(
 
     }
 
+
     return index + 1;
 
 }
 
 
 /* =========================================================
-   RANK COLORS
+   TOP 3 COLORS
 ========================================================= */
 
-function getRankClass(rank) {
+function getRankClass(
+    rank
+) {
 
     if (rank === 1) {
+
         return "rank-gold";
+
     }
 
     if (rank === 2) {
+
         return "rank-silver";
+
     }
 
     if (rank === 3) {
+
         return "rank-bronze";
+
     }
 
     return "";
@@ -759,41 +881,59 @@ function renderOverall() {
     const rankings =
         getOverallRankings();
 
+
     rankingTitle.textContent =
         "Overall Rankings";
 
+
     currentCategory.textContent =
         "OVERALL";
+
 
     if (
         rankings.length === 0
     ) {
 
         rankingList.innerHTML = `
+
             <div class="empty">
-                No players have been added yet.
+
+                No players have been
+                added yet.
+
             </div>
+
         `;
 
         return;
 
     }
 
+
     let html = `
 
         <div class="ranking-row header">
 
-            <div>#</div>
+            <div>
+                #
+            </div>
 
-            <div>Player</div>
+            <div>
+                Player
+            </div>
 
-            <div>Points</div>
+            <div>
+                Points
+            </div>
 
-            <div>Rankings</div>
+            <div>
+                Rankings
+            </div>
 
         </div>
 
     `;
+
 
     rankings.forEach(
         (player, index) => {
@@ -804,14 +944,18 @@ function renderOverall() {
                     rankings
                 );
 
+
             const rankClass =
-                getRankClass(rank);
+                getRankClass(
+                    rank
+                );
+
 
             const tierHTML =
                 player.tiers
-                    .map(item => {
 
-                        return `
+                    .map(
+                        item => `
 
                             <span
                                 class="tier-with-mode"
@@ -835,10 +979,11 @@ function renderOverall() {
 
                             </span>
 
-                        `;
+                        `
+                    )
 
-                    })
                     .join("");
+
 
             html += `
 
@@ -847,8 +992,11 @@ function renderOverall() {
                     <div
                         class="position ${rankClass}"
                     >
+
                         ${rank}
+
                     </div>
+
 
                     <div
                         class="player-name ${rankClass}"
@@ -856,17 +1004,25 @@ function renderOverall() {
                             player.username
                         )}')"
                     >
+
                         ${escapeHTML(
                             player.username
                         )}
+
                     </div>
+
 
                     <div class="points">
+
                         ${player.points}
+
                     </div>
 
+
                     <div class="tier-list">
+
                         ${tierHTML}
+
                     </div>
 
                 </div>
@@ -875,6 +1031,7 @@ function renderOverall() {
 
         }
     );
+
 
     rankingList.innerHTML =
         html;
@@ -886,46 +1043,68 @@ function renderOverall() {
    GAMEMODE DISPLAY
 ========================================================= */
 
-function renderGamemode(mode) {
+function renderGamemode(
+    mode
+) {
 
     const rankings =
-        getGamemodeRankings(mode);
+        getGamemodeRankings(
+            mode
+        );
+
 
     rankingTitle.textContent =
         mode + " Rankings";
 
+
     currentCategory.textContent =
         mode.toUpperCase();
+
 
     if (
         rankings.length === 0
     ) {
 
         rankingList.innerHTML = `
+
             <div class="empty">
-                No players have been tested in this gamemode yet.
+
+                No players have been
+                tested in this gamemode yet.
+
             </div>
+
         `;
 
         return;
 
     }
 
+
     let html = `
 
         <div class="ranking-row header">
 
-            <div>#</div>
+            <div>
+                #
+            </div>
 
-            <div>Player</div>
+            <div>
+                Player
+            </div>
 
-            <div>Tier</div>
+            <div>
+                Tier
+            </div>
 
-            <div>Points</div>
+            <div>
+                Points
+            </div>
 
         </div>
 
     `;
+
 
     rankings.forEach(
         (player, index) => {
@@ -936,38 +1115,45 @@ function renderGamemode(mode) {
                     rankings
                 );
 
-            const rankClass =
-                getRankClass(rank);
 
             html += `
 
                 <div class="ranking-row">
 
-                    <div
-                        class="position ${rankClass}"
-                    >
+                    <div class="position">
+
                         ${rank}
+
                     </div>
 
+
                     <div
-                        class="player-name ${rankClass}"
+                        class="player-name"
                         onclick="openProfile('${escapeHTML(
                             player.username
                         )}')"
                     >
+
                         ${escapeHTML(
                             player.username
                         )}
+
                     </div>
 
+
                     <div>
+
                         ${createTierBadge(
                             player.tier
                         )}
+
                     </div>
 
+
                     <div class="points">
+
                         ${player.points}
+
                     </div>
 
                 </div>
@@ -976,6 +1162,7 @@ function renderGamemode(mode) {
 
         }
     );
+
 
     rankingList.innerHTML =
         html;
@@ -1011,46 +1198,54 @@ function renderMode() {
    GAMEMODE BUTTONS
 ========================================================= */
 
-modeButtons.forEach(button => {
+modeButtons.forEach(
+    button => {
 
-    button.addEventListener(
-        "click",
-        () => {
+        button.addEventListener(
+            "click",
+            () => {
 
-            if (
-                button.id ===
-                "editButton"
-            ) {
+                if (
+                    button.id ===
+                    "editButton"
+                ) {
 
-                return;
+                    return;
 
-            }
+                }
 
-            modeButtons.forEach(btn => {
 
-                btn.classList.remove(
+                modeButtons.forEach(
+                    btn => {
+
+                        btn.classList.remove(
+                            "active"
+                        );
+
+                    }
+                );
+
+
+                button.classList.add(
                     "active"
                 );
 
-            });
 
-            button.classList.add(
-                "active"
-            );
+                currentMode =
+                    button.dataset.mode;
 
-            currentMode =
-                button.dataset.mode;
 
-            renderMode();
+                renderMode();
 
-        }
-    );
+            }
+        );
 
-});
+    }
+);
 
 
 /* =========================================================
-   PROFILE
+   PLAYER PROFILE
 ========================================================= */
 
 const profileOverlay =
@@ -1079,64 +1274,93 @@ const profileTiers =
     );
 
 
-function openProfile(username) {
+function openProfile(
+    username
+) {
 
     const player =
         players[username];
 
+
     if (!player) {
+
         return;
+
     }
+
 
     profileName.textContent =
         username;
 
+
     profilePoints.textContent =
         "Overall: " +
-        getPlayerPoints(player) +
+        getPlayerPoints(
+            player
+        ) +
         " points";
+
 
     profileAvatar.src =
         "https://mc-heads.net/avatar/" +
-        encodeURIComponent(username) +
+        encodeURIComponent(
+            username
+        ) +
         "/96";
+
 
     let html = "";
 
-    GAMEMODES.forEach(mode => {
 
-        const tier =
-            player.tiers[mode];
+    GAMEMODES.forEach(
+        mode => {
 
-        html += `
+            const tier =
+                player.tiers[mode];
 
-            <div class="profile-tier">
 
-                <span>
+            html += `
 
-                    ${getModeIcon(mode)}
-                    ${mode}
+                <div class="profile-tier">
 
-                </span>
+                    <span>
 
-                ${
-                    tier
-                        ? createTierBadge(tier)
+                        ${getModeIcon(
+                            mode
+                        )}
+
+                        ${mode}
+
+                    </span>
+
+
+                    ${
+                        tier
+
+                        ? createTierBadge(
+                            tier
+                        )
+
                         : `
-                            <span class="untested">
+                            <span
+                                class="untested"
+                            >
                                 —
                             </span>
                         `
-                }
+                    }
 
-            </div>
+                </div>
 
-        `;
+            `;
 
-    });
+        }
+    );
+
 
     profileTiers.innerHTML =
         html;
+
 
     profileOverlay.classList.remove(
         "hidden"
@@ -1154,7 +1378,9 @@ window.openProfile =
 ========================================================= */
 
 document
-    .getElementById("closeProfile")
+    .getElementById(
+        "closeProfile"
+    )
     .addEventListener(
         "click",
         () => {
@@ -1199,8 +1425,10 @@ playerSearch.addEventListener(
                 .trim()
                 .toLowerCase();
 
+
         searchResults.innerHTML =
             "";
+
 
         if (!query) {
 
@@ -1211,64 +1439,84 @@ playerSearch.addEventListener(
 
         }
 
+
         const matches =
             Object.keys(players)
-                .filter(username =>
-                    username
-                        .toLowerCase()
-                        .includes(query)
+
+                .filter(
+                    username =>
+                        username
+                            .toLowerCase()
+                            .includes(
+                                query
+                            )
                 )
+
                 .slice(0, 8);
+
 
         if (
             matches.length === 0
         ) {
 
             searchResults.innerHTML = `
+
                 <div class="search-result">
+
                     No players found.
+
                 </div>
+
             `;
 
         } else {
 
-            matches.forEach(username => {
+            matches.forEach(
+                username => {
 
-                const result =
-                    document.createElement(
-                        "div"
-                    );
-
-                result.className =
-                    "search-result";
-
-                result.textContent =
-                    username;
-
-                result.addEventListener(
-                    "click",
-                    () => {
-
-                        openProfile(
-                            username
+                    const result =
+                        document.createElement(
+                            "div"
                         );
 
-                        playerSearch.value =
-                            "";
 
-                        searchResults.style.display =
-                            "none";
+                    result.className =
+                        "search-result";
 
-                    }
-                );
 
-                searchResults.appendChild(
-                    result
-                );
+                    result.textContent =
+                        username;
 
-            });
+
+                    result.addEventListener(
+                        "click",
+                        () => {
+
+                            openProfile(
+                                username
+                            );
+
+
+                            playerSearch.value =
+                                "";
+
+
+                            searchResults.style.display =
+                                "none";
+
+                        }
+                    );
+
+
+                    searchResults.appendChild(
+                        result
+                    );
+
+                }
+            );
 
         }
+
 
         searchResults.style.display =
             "block";
@@ -1316,7 +1564,9 @@ const editorOverlay =
 
 
 document
-    .getElementById("editButton")
+    .getElementById(
+        "editButton"
+    )
     .addEventListener(
         "click",
         () => {
@@ -1327,11 +1577,13 @@ document
                 )
                 .value = "";
 
+
             document
                 .getElementById(
                     "loginMessage"
                 )
                 .textContent = "";
+
 
             loginOverlay.classList.remove(
                 "hidden"
@@ -1342,7 +1594,9 @@ document
 
 
 document
-    .getElementById("closeLogin")
+    .getElementById(
+        "closeLogin"
+    )
     .addEventListener(
         "click",
         () => {
@@ -1356,7 +1610,9 @@ document
 
 
 document
-    .getElementById("loginButton")
+    .getElementById(
+        "loginButton"
+    )
     .addEventListener(
         "click",
         loginTester
@@ -1364,7 +1620,9 @@ document
 
 
 document
-    .getElementById("testerPassword")
+    .getElementById(
+        "testerPassword"
+    )
     .addEventListener(
         "keydown",
         event => {
@@ -1391,10 +1649,12 @@ function loginTester() {
             )
             .value;
 
+
     const message =
         document.getElementById(
             "loginMessage"
         );
+
 
     if (
         password ===
@@ -1405,9 +1665,11 @@ function loginTester() {
             "hidden"
         );
 
+
         editorOverlay.classList.remove(
             "hidden"
         );
+
 
         message.textContent =
             "";
@@ -1416,6 +1678,7 @@ function loginTester() {
 
         message.textContent =
             "Incorrect password.";
+
 
         message.style.color =
             "#ff7777";
@@ -1430,7 +1693,9 @@ function loginTester() {
 ========================================================= */
 
 document
-    .getElementById("closeEditor")
+    .getElementById(
+        "closeEditor"
+    )
     .addEventListener(
         "click",
         () => {
@@ -1444,11 +1709,13 @@ document
 
 
 /* =========================================================
-   SAVE TIER
+   SAVE / EDIT TIER
 ========================================================= */
 
 document
-    .getElementById("saveTier")
+    .getElementById(
+        "saveTier"
+    )
     .addEventListener(
         "click",
         saveTier
@@ -1465,12 +1732,14 @@ async function saveTier() {
             .value
             .trim();
 
+
     const gamemode =
         document
             .getElementById(
                 "editGamemode"
             )
             .value;
+
 
     const tier =
         document
@@ -1479,23 +1748,28 @@ async function saveTier() {
             )
             .value;
 
+
     const message =
         document
             .getElementById(
                 "saveMessage"
             );
 
+
     if (!username) {
 
         message.textContent =
             "Enter a Minecraft username.";
 
+
         message.style.color =
             "#ff7777";
+
 
         return;
 
     }
+
 
     /* Create player if needed */
 
@@ -1504,28 +1778,35 @@ async function saveTier() {
     ) {
 
         players[username] = {
+
             tiers: {}
+
         };
 
     }
 
+
     /* Make sure all gamemodes exist */
 
-    GAMEMODES.forEach(mode => {
+    GAMEMODES.forEach(
+        mode => {
 
-        if (
-            !(mode in players[username].tiers)
-        ) {
+            if (
+                !(mode in
+                    players[username].tiers)
+            ) {
 
-            players[username]
-                .tiers[mode] =
-                null;
+                players[username]
+                    .tiers[mode] =
+                    null;
+
+            }
 
         }
+    );
 
-    });
 
-    /* Set tier */
+    /* Set or remove tier */
 
     if (
         tier ===
@@ -1544,16 +1825,19 @@ async function saveTier() {
 
     }
 
+
     message.textContent =
         "Saving...";
 
     message.style.color =
         "#ffffff";
 
+
     const success =
         await savePlayerToDatabase(
             username
         );
+
 
     if (!success) {
 
@@ -1567,6 +1851,7 @@ async function saveTier() {
 
     }
 
+
     message.textContent =
         username +
         "'s " +
@@ -1576,13 +1861,14 @@ async function saveTier() {
     message.style.color =
         "#7ee2a8";
 
+
     renderMode();
 
 }
 
 
 /* =========================================================
-   DELETE PLAYER BUTTON
+   DELETE PLAYER
 ========================================================= */
 
 function addDeleteButton() {
@@ -1592,28 +1878,37 @@ function addDeleteButton() {
             "saveTier"
         );
 
+
     if (!saveButton) {
+
         return;
+
     }
+
 
     if (
         document.getElementById(
             "deletePlayer"
         )
     ) {
+
         return;
+
     }
+
 
     const deleteButton =
         document.createElement(
             "button"
         );
 
+
     deleteButton.id =
         "deletePlayer";
 
     deleteButton.textContent =
         "Delete Player";
+
 
     deleteButton.style.marginTop =
         "10px";
@@ -1633,15 +1928,11 @@ function addDeleteButton() {
     deleteButton.style.cursor =
         "pointer";
 
-    deleteButton.style.width =
-        "100%";
-
-    deleteButton.style.borderRadius =
-        "8px";
 
     saveButton.parentElement.appendChild(
         deleteButton
     );
+
 
     deleteButton.addEventListener(
         "click",
@@ -1650,10 +1941,6 @@ function addDeleteButton() {
 
 }
 
-
-/* =========================================================
-   DELETE PLAYER
-========================================================= */
 
 async function deletePlayer() {
 
@@ -1665,11 +1952,13 @@ async function deletePlayer() {
             .value
             .trim();
 
+
     const message =
         document
             .getElementById(
                 "saveMessage"
             );
+
 
     if (!username) {
 
@@ -1682,6 +1971,7 @@ async function deletePlayer() {
         return;
 
     }
+
 
     if (
         !players[username]
@@ -1697,6 +1987,7 @@ async function deletePlayer() {
 
     }
 
+
     const confirmed =
         confirm(
             "Are you sure you want to delete " +
@@ -1704,17 +1995,23 @@ async function deletePlayer() {
             " from NA Tiers?"
         );
 
+
     if (!confirmed) {
+
         return;
+
     }
+
 
     message.textContent =
         "Deleting...";
+
 
     const success =
         await deletePlayerFromDatabase(
             username
         );
+
 
     if (!success) {
 
@@ -1728,7 +2025,9 @@ async function deletePlayer() {
 
     }
 
+
     delete players[username];
+
 
     message.textContent =
         username +
@@ -1737,19 +2036,45 @@ async function deletePlayer() {
     message.style.color =
         "#7ee2a8";
 
+
     renderMode();
 
 }
 
 
 /* =========================================================
-   REALTIME UPDATES
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(
+    text
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        text;
+
+
+    return div.innerHTML;
+
+}
+
+
+/* =========================================================
+   REALTIME DATABASE UPDATES
 ========================================================= */
 
 function startRealtimeUpdates() {
 
     supabaseClient
-        .channel("na-tiers-live")
+        .channel(
+            "na-tiers-live"
+        )
         .on(
             "postgres_changes",
             {
@@ -1760,42 +2085,27 @@ function startRealtimeUpdates() {
             async () => {
 
                 console.log(
-                    "NA Tiers database changed."
+                    "NA Tiers database changed. Reloading..."
                 );
 
+
                 await loadPlayersFromDatabase();
+
 
                 renderMode();
 
             }
         )
-        .subscribe(status => {
+        .subscribe(
+            status => {
 
-            console.log(
-                "Realtime status:",
-                status
-            );
+                console.log(
+                    "Realtime status:",
+                    status
+                );
 
-        });
-
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
-function escapeHTML(text) {
-
-    const div =
-        document.createElement(
-            "div"
+            }
         );
-
-    div.textContent =
-        text;
-
-    return div.innerHTML;
 
 }
 
@@ -1806,12 +2116,9 @@ function escapeHTML(text) {
 
 async function initializeNATiers() {
 
-    console.log(
-        "Initializing NA Tiers..."
-    );
-
     const loaded =
         await loadPlayersFromDatabase();
+
 
     if (!loaded) {
 
@@ -1819,21 +2126,14 @@ async function initializeNATiers() {
             "NA Tiers could not connect to Supabase."
         );
 
-        /*
-           Still render the page so the
-           navigation/editor don't appear
-           completely broken.
-        */
-
-        renderMode();
-
         return;
 
     }
 
+
     /*
-       If the database has no players,
-       create the example players.
+       If database is empty, put the
+       example players into it.
     */
 
     if (
@@ -1846,15 +2146,14 @@ async function initializeNATiers() {
 
     }
 
+
     renderMode();
+
 
     addDeleteButton();
 
-    startRealtimeUpdates();
 
-    console.log(
-        "NA Tiers initialized successfully."
-    );
+    startRealtimeUpdates();
 
 }
 
